@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
 # ============================================================
 # 1. НАСТРОЙКА СТРАНИЦЫ
@@ -104,6 +103,14 @@ h1, h2, h3, h4 { color: #f8fafc !important; font-weight: 800 !important; }
     border-radius: 12px;
 }
 .stAlert p { color: #34d399 !important; font-weight: 600; }
+
+/* СТИЛИЗАЦИЯ ВСТРОЕННОГО ГРАФИКА STREAMLIT */
+[data-testid="stVegaLiteChart"] {
+    background: rgba(17,26,43,0.5);
+    border: 1px solid rgba(148,163,184,0.14);
+    border-radius: 14px;
+    padding: 15px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -161,7 +168,6 @@ for name, params in tariffs.items():
             continue
         
         annual = params["price"] * team_size * 12
-        monthly = params["price"] * team_size
         
         results.append({
             "Платформа": name,
@@ -227,40 +233,19 @@ if results:
         st.write(html_table, unsafe_allow_html=True)
 
     with col_chart:
-        # Готовим данные для графика
+        # Готовим данные для встроенного графика Streamlit
         chart_df = pd.DataFrame({
             "Платформа": [r["Платформа"] for r in results],
             "Годовая стоимость": [r["Стоимость в год"] for r in results]
         }).sort_values("Годовая стоимость", ascending=True)
         
-        # Создаем красивый график через Plotly
-        fig = px.bar(
-            chart_df, 
-            x="Годовая стоимость", 
-            y="Платформа", 
-            orientation='h',
-            text="Годовая стоимость",
-            color_discrete_sequence=["#38bdf8"]
+        # Нативный график Streamlit (с голубым цветом)
+        st.bar_chart(
+            chart_df.set_index("Платформа"), 
+            color="#38bdf8", 
+            height=300,
+            use_container_width=True
         )
-        
-        # Настраиваем дизайн графика (прозрачный фон, аккуратные подписи)
-        fig.update_traces(
-            texttemplate='%{text:,.0f} ₽', 
-            textposition='outside',
-            marker=dict(line=dict(color='rgba(56,189,248,0.5)', width=1))
-        )
-        
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#94a3b8', family="Inter"),
-            xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', title=""),
-            yaxis=dict(title="", tickfont=dict(size=13, color='#f1f5f9')),
-            margin=dict(l=0, r=20, t=20, b=0),
-            height=300
-        )
-        
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 else:
     st.error("Для выбранных параметров нет доступных тарифов.")
