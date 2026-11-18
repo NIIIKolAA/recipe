@@ -1,140 +1,98 @@
 import streamlit as st
 import pandas as pd
 
-# ============================================================
 # 1. НАСТРОЙКА СТРАНИЦЫ
-# ============================================================
-st.set_page_config(
-    page_title="SaaS Advisor — Smart TCO",
-    page_icon="💎",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="SaaS Advisor", page_icon="💎", layout="wide")
 
-# ============================================================
-# 2. ПРЕМИАЛЬНЫЙ ДИЗАЙН CSS
-# ============================================================
+# 2. КРАСИВЫЙ И НАДЕЖНЫЙ CSS (без ломки нативных таблиц)
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    
+    /* Темный фон */
+    .stApp {
+        background: radial-gradient(circle at 10% 0%, #1e1b4b 0%, #0f172a 40%, #020617 100%) !important;
+        color: #f8fafc !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    /* Сайдбар */
+    [data-testid="stSidebar"] {
+        background: rgba(15, 23, 42, 0.8) !important;
+        border-right: 1px solid rgba(56, 189, 248, 0.2);
+    }
+    [data-testid="stSidebar"] * { color: #e2e8f0 !important; }
 
-/* ОСНОВНОЙ ФОН */
-.stApp {
-    background: radial-gradient(ellipse at 15% 0%, rgba(56,189,248,0.10), transparent 35%),
-                radial-gradient(ellipse at 90% 10%, rgba(129,140,248,0.10), transparent 35%),
-                #080d19 !important;
-    font-family: 'Inter', sans-serif !important;
-    color: #f1f5f9;
-}
+    /* Заголовки */
+    h1, h2, h3 { color: #f8fafc !important; font-weight: 800 !important; }
+    
+    /* Шапка */
+    .hero {
+        background: linear-gradient(120deg, rgba(30,41,59,0.9), rgba(23,37,65,0.8));
+        border: 1px solid rgba(56,189,248,0.3);
+        border-radius: 16px;
+        padding: 25px 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .hero h1 { margin: 0; font-size: 32px; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: #94a3b8; font-size: 14px; margin-top: 8px; margin-bottom: 0; }
 
-/* УБИРАЕМ ЛИШНИЕ ОТСТУПЫ */
-.block-container {
-    padding-top: 1.5rem !important;
-    padding-bottom: 1.5rem !important;
-    max-width: 1400px;
-}
-header[data-testid="stHeader"] { background: transparent; }
-footer { visibility: hidden; }
+    /* Карточки метрик */
+    [data-testid="stMetric"] {
+        background: rgba(30, 41, 59, 0.6) !important;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 12px;
+        padding: 15px !important;
+        text-align: center;
+    }
+    [data-testid="stMetricValue"] { color: #38bdf8 !important; font-size: 24px !important; font-weight: 800 !important; }
+    [data-testid="stMetricLabel"] { color: #94a3b8 !important; font-size: 13px !important; }
 
-/* БОКОВАЯ ПАНЕЛЬ */
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #101a2c, #0b1220) !important;
-    border-right: 1px solid rgba(148,163,184,0.14);
-}
-[data-testid="stSidebar"] * { color: #e2e8f0; }
+    /* Нативная таблица (делаем темной) */
+    [data-testid="stDataFrame"] {
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 10px;
+        background-color: #0f172a !important;
+    }
+    [data-testid="stDataFrame"] * { color: #f8fafc !important; font-size: 14px !important; }
+    [data-testid="stDataFrame"] th { background-color: #1e293b !important; color: #38bdf8 !important; text-align: center !important; }
 
-/* ЗАГОЛОВКИ */
-h1, h2, h3, h4 { color: #f8fafc !important; font-weight: 800 !important; }
+    /* Нативный график */
+    [data-testid="stVegaLiteChart"] {
+        background: rgba(30, 41, 59, 0.3);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 12px;
+        padding: 10px;
+    }
 
-/* ГЛАВНАЯ ШАПКА (HERO) */
-.hero {
-    background: linear-gradient(120deg, rgba(30,41,59,0.95), rgba(23,37,65,0.85));
-    border: 1px solid rgba(56,189,248,0.22);
-    border-radius: 22px;
-    padding: 30px 35px;
-    margin-bottom: 25px;
-    box-shadow: 0 15px 45px rgba(0,0,0,0.22);
-}
-.hero h1 {
-    font-size: 36px;
-    margin: 0;
-    background: linear-gradient(90deg,#ffffff,#7dd3fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.hero p { color: #94a3b8; font-size: 14px; margin-top: 10px; margin-bottom: 0; }
-
-/* КАРТОЧКИ МЕТРИК */
-[data-testid="stMetric"] {
-    background: linear-gradient(145deg,#142137,#101a2b) !important;
-    border: 1px solid rgba(56,189,248,0.17) !important;
-    border-radius: 17px !important;
-    padding: 15px !important;
-    min-height: 100px;
-}
-[data-testid="stMetricLabel"] { color: #94a3b8 !important; font-size: 13px !important; }
-[data-testid="stMetricValue"] { color: #7dd3fc !important; font-size: 26px !important; font-weight: 800 !important; }
-
-/* ТАБЛИЦА */
-[data-testid="stDataFrame"] {
-    border: 1px solid rgba(56,189,248,0.18);
-    border-radius: 14px;
-    background-color: #0f172a !important;
-}
-[data-testid="stDataFrame"] * { color: #f1f5f9 !important; }
-[data-testid="stDataFrame"] th { background-color: #1e293b !important; color: #38bdf8 !important; }
-
-/* ГРАФИК */
-[data-testid="stVegaLiteChart"] {
-    background: rgba(17,26,43,0.7);
-    border: 1px solid rgba(148,163,184,0.14);
-    border-radius: 16px;
-    padding: 10px;
-}
-
-/* УВЕДОМЛЕНИЯ */
-.stAlert {
-    background: rgba(16, 185, 129, 0.1) !important;
-    border: 1px solid rgba(16, 185, 129, 0.3) !important;
-    border-radius: 12px;
-}
-.stAlert p { color: #34d399 !important; font-weight: 600; }
+    /* Уведомление */
+    .stAlert {
+        background: rgba(16, 185, 129, 0.1) !important;
+        border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        border-radius: 10px;
+    }
+    .stAlert p { color: #34d399 !important; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
-
-# ============================================================
-# 3. ШАПКА САЙТА (ИСПОЛЬЗУЕМ st.write)
-# ============================================================
+# 3. ШАПКА (Безопасный HTML)
 hero_html = """
 <div class="hero">
     <h1>💎 SaaS Advisor</h1>
-    <p>Интеллектуальная платформа для сравнения облачных сервисов. Анализируйте стоимость владения, проверяйте поддержку SSO и выбирайте оптимальное решение для вашей команды.</p>
+    <p>Интеллектуальная платформа для сравнения облачных сервисов и расчета совокупной стоимости владения (TCO).</p>
 </div>
 """
 st.write(hero_html, unsafe_allow_html=True)
 
-
-# ============================================================
-# 4. БОКОВАЯ ПАНЕЛЬ
-# ============================================================
+# 4. ПАРАМЕТРЫ
 with st.sidebar:
-    st.markdown("## 💎 SaaS Advisor")
-    st.caption("SMART TCO ANALYTICS")
-    st.markdown("---")
-    
+    st.markdown("### ⚙️ Параметры команды")
     team_size = st.slider("Количество сотрудников", min_value=10, max_value=500, value=100, step=10)
-    require_sso = st.checkbox("Требуется SSO", value=False)
-    
-    st.markdown("---")
-    st.caption("Версия системы: 1.0")
-    st.caption("Расчетный период: 2026 год")
-    st.caption("© 2026 SaaS Advisor")
+    require_sso = st.checkbox("Требуется SSO")
+    st.caption("© 2026 Курсовой проект")
 
-
-# ============================================================
-# 5. БАЗА ТАРИФОВ
-# ============================================================
+# 5. ЛОГИКА
 tariffs = {
     "VK WorkSpace Базовый": {"price": 309, "max": 300, "sso": False},
     "VK WorkSpace Расширенный": {"price": 499, "max": 500, "sso": True},
@@ -143,13 +101,9 @@ tariffs = {
     "Р7 пространство": {"price": 320, "max": 50, "sso": False}
 }
 
-
-# ============================================================
-# 6. ЛОГИКА РАСЧЕТА
-# ============================================================
 results = []
 best_option = None
-min_price = float("inf")
+min_price = float('inf')
 
 for name, params in tariffs.items():
     if team_size <= params["max"]:
@@ -157,12 +111,11 @@ for name, params in tariffs.items():
             continue
         
         annual = params["price"] * team_size * 12
-        monthly = params["price"] * team_size
         
         results.append({
             "Платформа": name,
-            "Цена за польз.": f"{params['price']} ₽",
-            "Стоимость в год": f"{annual:,.0f} ₽",
+            "Цена (мес.)": f"{params['price']} ₽",
+            "В год (₽)": annual,
             "SSO": "✅ Да" if params["sso"] else "❌ Нет"
         })
         
@@ -170,88 +123,51 @@ for name, params in tariffs.items():
             min_price = annual
             best_option = name
 
-
-# ============================================================
-# 7. ОСНОВНЫЕ МЕТРИКИ
-# ============================================================
-st.markdown("### 📊 Панель аналитики")
-
+# 6. МЕТРИКИ
+st.markdown("### 📊 Результаты анализа")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Размер команды", f"{team_size} чел.")
-col2.metric("Требование SSO", "Включено" if require_sso else "Не требуется")
-col3.metric("Доступные тарифы", len(results))
+col2.metric("Требование SSO", "Да" if require_sso else "Нет")
+col3.metric("Доступно тарифов", len(results))
 col4.metric("Минимум в год", f"{min_price:,.0f} ₽" if best_option else "—")
 
-
-# ============================================================
-# 8. РЕКОМЕНДАЦИЯ (Заменено на нативный Streamlit-блок)
-# ============================================================
 if best_option:
-    st.success(f"🏆 **OPTIMAL SOLUTION:** {best_option} | Стоимость: **{min_price:,.0f} ₽ / год**. Это решение обеспечивает наилучший баланс цены и требований безопасности.")
+    st.success(f"🏆 **Оптимальный выбор:** {best_option} (Стоимость: {min_price:,.0f} ₽ / год)")
 
+st.markdown("---")
 
-# ============================================================
-# 9. СРАВНЕНИЕ ТАРИФОВ И ГРАФИК
-# ============================================================
-st.markdown("### 📈 Сравнение решений")
-
+# 7. ТАБЛИЦА И ГРАФИК
 if results:
     col_table, col_chart = st.columns([1.2, 1], gap="large")
 
     with col_table:
+        st.markdown("#### Сравнение тарифов")
         df = pd.DataFrame(results)
         
         def highlight_best(row):
             if row["Платформа"] == best_option:
                 return ['background-color: rgba(56,189,248,0.15); color: #38bdf8; font-weight: bold;'] * len(row)
             return [''] * len(row)
-        
-        st.dataframe(df.style.apply(highlight_best, axis=1), use_container_width=True, hide_index=True)
+            
+        st.dataframe(
+            df.style.apply(highlight_best, axis=1), 
+            use_container_width=True, 
+            hide_index=True
+        )
 
     with col_chart:
+        st.markdown("#### Годовые расходы")
+        # Берем только названия и суммы для графика
         chart_df = pd.DataFrame({
             "Платформа": [r["Платформа"] for r in results],
-            "Годовая стоимость": [int(r["Стоимость в год"].replace(" ₽", "").replace(",", "")) for r in results]
-        }).sort_values("Годовая стоимость", ascending=True)
+            "Стоимость": [r["В год (₽)"] for r in results]
+        }).sort_values("Стоимость", ascending=True)
         
-        st.bar_chart(chart_df.set_index("Платформа"), color="#38bdf8", height=280, use_container_width=True)
-
-
-# ============================================================
-# 10. ДОПОЛНИТЕЛЬНАЯ АНАЛИТИКА
-# ============================================================
-if results:
-    st.markdown("### 🔍 Детальная аналитика")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        avg = sum(int(r["Стоимость в год"].replace(" ₽", "").replace(",", "")) for r in results) / len(results)
-        st.metric("Средняя стоимость в год", f"{avg:,.0f} ₽")
-    with col2:
-        max_p = max(int(r["Стоимость в год"].replace(" ₽", "").replace(",", "")) for r in results)
-        st.metric("Разница между тарифами", f"{max_p - min_price:,.0f} ₽")
-
-
-# ============================================================
-# 11. МЕТОДОЛОГИЯ
-# ============================================================
-with st.expander("📚 О проекте и методологии расчета"):
-    st.write("""
-    **SaaS Advisor** — аналитический инструмент для выбора облачной среды совместной работы.
-    Система учитывает: количество сотрудников, стоимость лицензии, лимиты пользователей, наличие SSO и TCO.
-    **Формула:** Годовая стоимость = Цена лицензии × Количество сотрудников × 12.
-    """)
-
-
-# ============================================================
-# 12. ФУТЕР
-# ============================================================
-footer_html = """
-<div style="border-top: 1px solid rgba(148,163,184,0.14); margin-top: 40px; padding-top: 15px; text-align: center; color: #64748b; font-size: 11px;">
-    <b>💎 SaaS Advisor</b><br>
-    Intelligent SaaS Comparison Platform<br>
-    © 2026 Academic Project
-</div>
-"""
-st.write(footer_html, unsafe_allow_html=True)
+        st.bar_chart(
+            chart_df.set_index("Платформа"), 
+            color="#38bdf8", 
+            height=280, 
+            use_container_width=True
+        )
+else:
+    st.error("Для выбранных параметров нет доступных тарифов. Измените размер команды или уберите требование SSO.")
