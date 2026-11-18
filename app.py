@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 # ============================================================
 # 1. НАСТРОЙКА СТРАНИЦЫ
@@ -27,12 +28,7 @@ st.markdown("""
     color: #f1f5f9;
 }
 
-/* УБИРАЕМ ЛИШНИЕ ОТСТУПЫ */
-.block-container {
-    padding-top: 1.5rem !important;
-    padding-bottom: 1.5rem !important;
-    max-width: 1400px;
-}
+.block-container { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; max-width: 1400px; }
 header[data-testid="stHeader"] { background: transparent; }
 footer { visibility: hidden; }
 
@@ -56,11 +52,9 @@ h1, h2, h3, h4 { color: #f8fafc !important; font-weight: 800 !important; }
     box-shadow: 0 15px 45px rgba(0,0,0,0.22);
 }
 .hero h1 {
-    font-size: 36px;
-    margin: 0;
+    font-size: 36px; margin: 0;
     background: linear-gradient(90deg,#ffffff,#7dd3fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .hero p { color: #94a3b8; font-size: 14px; margin-top: 10px; margin-bottom: 0; }
 
@@ -75,22 +69,33 @@ h1, h2, h3, h4 { color: #f8fafc !important; font-weight: 800 !important; }
 [data-testid="stMetricLabel"] { color: #94a3b8 !important; font-size: 13px !important; }
 [data-testid="stMetricValue"] { color: #7dd3fc !important; font-size: 26px !important; font-weight: 800 !important; }
 
-/* ТАБЛИЦА */
-[data-testid="stDataFrame"] {
-    border: 1px solid rgba(56,189,248,0.18);
+/* КАСТОМНАЯ ТАБЛИЦА */
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(17,26,43,0.8);
     border-radius: 14px;
-    background-color: #0f172a !important;
+    overflow: hidden;
+    border: 1px solid rgba(56,189,248,0.18);
 }
-[data-testid="stDataFrame"] * { color: #f1f5f9 !important; }
-[data-testid="stDataFrame"] th { background-color: #1e293b !important; color: #38bdf8 !important; }
-
-/* ГРАФИК */
-[data-testid="stVegaLiteChart"] {
-    background: rgba(17,26,43,0.7);
-    border: 1px solid rgba(148,163,184,0.14);
-    border-radius: 16px;
-    padding: 10px;
+.custom-table th {
+    background: rgba(30,41,59,0.9);
+    color: #38bdf8;
+    padding: 15px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(56,189,248,0.2);
 }
+.custom-table td {
+    padding: 15px;
+    color: #e2e8f0;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.custom-table tr:hover { background: rgba(56,189,248,0.05); }
+.custom-table tr.best-row { background: rgba(56,189,248,0.1); }
+.custom-table tr.best-row td { color: #38bdf8; font-weight: 700; }
 
 /* УВЕДОМЛЕНИЯ */
 .stAlert {
@@ -104,7 +109,7 @@ h1, h2, h3, h4 { color: #f8fafc !important; font-weight: 800 !important; }
 
 
 # ============================================================
-# 3. ШАПКА САЙТА (ИСПОЛЬЗУЕМ st.write)
+# 3. ШАПКА САЙТА
 # ============================================================
 hero_html = """
 <div class="hero">
@@ -128,7 +133,6 @@ with st.sidebar:
     
     st.markdown("---")
     st.caption("Версия системы: 1.0")
-    st.caption("Расчетный период: 2026 год")
     st.caption("© 2026 SaaS Advisor")
 
 
@@ -162,7 +166,7 @@ for name, params in tariffs.items():
         results.append({
             "Платформа": name,
             "Цена за польз.": f"{params['price']} ₽",
-            "Стоимость в год": f"{annual:,.0f} ₽",
+            "Стоимость в год": annual,
             "SSO": "✅ Да" if params["sso"] else "❌ Нет"
         })
         
@@ -182,76 +186,92 @@ col2.metric("Требование SSO", "Включено" if require_sso else "
 col3.metric("Доступные тарифы", len(results))
 col4.metric("Минимум в год", f"{min_price:,.0f} ₽" if best_option else "—")
 
-
-# ============================================================
-# 8. РЕКОМЕНДАЦИЯ (Заменено на нативный Streamlit-блок)
-# ============================================================
 if best_option:
-    st.success(f"🏆 **OPTIMAL SOLUTION:** {best_option} | Стоимость: **{min_price:,.0f} ₽ / год**. Это решение обеспечивает наилучший баланс цены и требований безопасности.")
+    st.success(f"🏆 **OPTIMAL SOLUTION:** {best_option} | Стоимость: **{min_price:,.0f} ₽ / год**")
 
 
 # ============================================================
-# 9. СРАВНЕНИЕ ТАРИФОВ И ГРАФИК
+# 8. ТАБЛИЦА И ГРАФИК
 # ============================================================
 st.markdown("### 📈 Сравнение решений")
 
 if results:
-    col_table, col_chart = st.columns([1.2, 1], gap="large")
+    col_table, col_chart = st.columns([1.1, 1], gap="large")
 
     with col_table:
-        df = pd.DataFrame(results)
+        # Строим красивую HTML-таблицу вручную
+        html_table = """
+        <table class="custom-table">
+            <tr>
+                <th>Платформа и тариф</th>
+                <th>Цена польз./мес.</th>
+                <th>Стоимость в год</th>
+                <th>SSO</th>
+            </tr>
+        """
+        for row in results:
+            is_best = row["Платформа"] == best_option
+            row_class = "best-row" if is_best else ""
+            
+            html_table += f"""
+            <tr class="{row_class}">
+                <td>{row['Платформа']}</td>
+                <td>{row['Цена за польз.']}</td>
+                <td>{row['Стоимость в год']:,} ₽</td>
+                <td>{row['SSO']}</td>
+            </tr>
+            """
+        html_table += "</table>"
         
-        def highlight_best(row):
-            if row["Платформа"] == best_option:
-                return ['background-color: rgba(56,189,248,0.15); color: #38bdf8; font-weight: bold;'] * len(row)
-            return [''] * len(row)
-        
-        st.dataframe(df.style.apply(highlight_best, axis=1), use_container_width=True, hide_index=True)
+        # Выводим через st.write, чтобы не было тегов
+        st.write(html_table, unsafe_allow_html=True)
 
     with col_chart:
+        # Готовим данные для графика
         chart_df = pd.DataFrame({
             "Платформа": [r["Платформа"] for r in results],
-            "Годовая стоимость": [int(r["Стоимость в год"].replace(" ₽", "").replace(",", "")) for r in results]
+            "Годовая стоимость": [r["Стоимость в год"] for r in results]
         }).sort_values("Годовая стоимость", ascending=True)
         
-        st.bar_chart(chart_df.set_index("Платформа"), color="#38bdf8", height=280, use_container_width=True)
+        # Создаем красивый график через Plotly
+        fig = px.bar(
+            chart_df, 
+            x="Годовая стоимость", 
+            y="Платформа", 
+            orientation='h',
+            text="Годовая стоимость",
+            color_discrete_sequence=["#38bdf8"]
+        )
+        
+        # Настраиваем дизайн графика (прозрачный фон, аккуратные подписи)
+        fig.update_traces(
+            texttemplate='%{text:,.0f} ₽', 
+            textposition='outside',
+            marker=dict(line=dict(color='rgba(56,189,248,0.5)', width=1))
+        )
+        
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#94a3b8', family="Inter"),
+            xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', title=""),
+            yaxis=dict(title="", tickfont=dict(size=13, color='#f1f5f9')),
+            margin=dict(l=0, r=20, t=20, b=0),
+            height=300
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+else:
+    st.error("Для выбранных параметров нет доступных тарифов.")
 
 
 # ============================================================
-# 10. ДОПОЛНИТЕЛЬНАЯ АНАЛИТИКА
-# ============================================================
-if results:
-    st.markdown("### 🔍 Детальная аналитика")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        avg = sum(int(r["Стоимость в год"].replace(" ₽", "").replace(",", "")) for r in results) / len(results)
-        st.metric("Средняя стоимость в год", f"{avg:,.0f} ₽")
-    with col2:
-        max_p = max(int(r["Стоимость в год"].replace(" ₽", "").replace(",", "")) for r in results)
-        st.metric("Разница между тарифами", f"{max_p - min_price:,.0f} ₽")
-
-
-# ============================================================
-# 11. МЕТОДОЛОГИЯ
-# ============================================================
-with st.expander("📚 О проекте и методологии расчета"):
-    st.write("""
-    **SaaS Advisor** — аналитический инструмент для выбора облачной среды совместной работы.
-    Система учитывает: количество сотрудников, стоимость лицензии, лимиты пользователей, наличие SSO и TCO.
-    **Формула:** Годовая стоимость = Цена лицензии × Количество сотрудников × 12.
-    """)
-
-
-# ============================================================
-# 12. ФУТЕР
+# 9. ФУТЕР
 # ============================================================
 footer_html = """
 <div style="border-top: 1px solid rgba(148,163,184,0.14); margin-top: 40px; padding-top: 15px; text-align: center; color: #64748b; font-size: 11px;">
-    <b>💎 SaaS Advisor</b><br>
-    Intelligent SaaS Comparison Platform<br>
-    © 2026 Academic Project
+    <b>💎 SaaS Advisor</b> · © 2026 Academic Project
 </div>
 """
 st.write(footer_html, unsafe_allow_html=True)
